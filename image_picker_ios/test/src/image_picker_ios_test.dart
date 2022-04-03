@@ -16,6 +16,6 @@ void main() {
   });
 
   test('getPlatformVersion', () async {
-    expect(await ImagePickerIosPlatform.platformVersion, '42');
+    expect(await ImagePickerIosPlatform().getPlatformVersion(), '42');
   });
 }

@@ -16,6 +16,6 @@ void main() {
   });
 
   test('getPlatformVersion', () async {
-    expect(await ImagePickerAndroidPlatform.platformVersion, '42');
+    expect(await ImagePickerAndroidPlatform().getPlatformVersion(), '42');
   });
 }

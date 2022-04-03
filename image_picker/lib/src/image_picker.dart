@@ -3,7 +3,12 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 class ImagePicker {
   ImagePicker({
     required ImagePickerPlatform? imagePickerPlatform,
-  }) : _imagePickerPlatform = imagePickerPlatform ?? ImagePickerPlatform.instance;
+  }) : _imagePickerPlatform =
+            imagePickerPlatform ?? ImagePickerPlatform.instance;
 
   final ImagePickerPlatform _imagePickerPlatform;
+
+  Future<String?> getPlatformVersion() async {
+    return _imagePickerPlatform.getPlatformVersion();
+  }
 }

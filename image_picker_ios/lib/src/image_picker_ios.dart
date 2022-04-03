@@ -7,7 +7,8 @@ class ImagePickerIosPlatform extends ImagePickerPlatform {
   static const _channel = MethodChannel('image_picker');
 
   /// Sample [MethodChannel] invokation.
-  static Future<String?> get platformVersion async {
+  @override
+  Future<String?> getPlatformVersion() async {
     final version = await _channel.invokeMethod<String?>('getPlatformVersion');
     return version;
   }

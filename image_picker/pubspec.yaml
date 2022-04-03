@@ -9,27 +9,27 @@ environment:
 
 flutter:
   plugin:
-    platforms: 
+    platforms:
       android:
-        default_package: image_picker_android 
+        default_package: image_picker_android
       ios:
-        default_package: image_picker_ios 
-      
-      
-      
-      
+        default_package: image_picker_ios
+
+
+
+
 
 dependencies:
   flutter:
     sdk: flutter
   image_picker_android:
-    path: ../image_picker_android 
+    path: ../image_picker_android
   image_picker_ios:
-    path: ../image_picker_ios 
-  
-  
-  
-  
+    path: ../image_picker_ios
+
+
+
+
   image_picker_platform_interface:
     path: ../image_picker_platform_interface
 
