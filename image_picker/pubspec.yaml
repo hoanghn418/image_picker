@@ -1,0 +1,41 @@
+name: image_picker
+description: An image picker flugin
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=2.14.0 <3.0.0"
+  flutter: ">=2.0.0"
+
+flutter:
+  plugin:
+    platforms: 
+      android:
+        default_package: image_picker_android 
+      ios:
+        default_package: image_picker_ios 
+      
+      
+      
+      
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker_android:
+    path: ../image_picker_android 
+  image_picker_ios:
+    path: ../image_picker_ios 
+  
+  
+  
+  
+  image_picker_platform_interface:
+    path: ../image_picker_platform_interface
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^0.1.4
+  plugin_platform_interface: ^2.0.1
+  very_good_analysis: ^2.4.0

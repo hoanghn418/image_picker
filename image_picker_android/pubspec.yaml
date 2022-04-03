@@ -1,0 +1,27 @@
+name: image_picker_android
+description: An implementation for the Android platform of the Flutter image_picker plugin.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=2.14.0 <3.0.0"
+  flutter: ">=2.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker_platform_interface:
+    path: ../image_picker_platform_interface
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^2.4.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: dev.hoanghn.image_picker
+        pluginClass: ImagePickerAndroidPlatform
+      
