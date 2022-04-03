@@ -3,7 +3,7 @@
 # Run `pod lib lint image_picker.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'image_picker'
+  s.name             = 'image_picker_ios'
   s.version          = '0.0.1'
   s.summary          = 'An image picker flugin'
   s.description      = <<-DESC
