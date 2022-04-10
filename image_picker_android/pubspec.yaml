@@ -24,4 +24,5 @@ flutter:
       android:
         package: dev.hoanghn.image_picker
         pluginClass: ImagePickerPlugin
+        dartPluginClass: ImagePickerAndroidPlatform
       

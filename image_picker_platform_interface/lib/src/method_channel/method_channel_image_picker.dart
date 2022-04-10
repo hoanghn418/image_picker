@@ -15,11 +15,18 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 /// This is the instance that runs when the native side talks
 /// to your Flutter app through MethodChannels (Android and iOS platforms).
 class MethodChannelImagePicker extends ImagePickerPlatform {
-  static const MethodChannel _channel = MethodChannel('image_picker');
+  static const MethodChannel _channel =
+      MethodChannel('hoanghn418.github.io/image_picker');
 
   @override
-  Future<String?> getPlatformVersion() async {
-    final version = await _channel.invokeMethod<String?>('getPlatformVersion');
-    return version;
+  Future<int> getImageCount() async {
+    final response = await _channel.invokeMethod<int>('getImageCount');
+    return response!;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getImage(int index) async {
+    final response = await _channel.invokeMethod<Map>('getImage', index);
+    return Map<String, dynamic>.from(response!);
   }
 }

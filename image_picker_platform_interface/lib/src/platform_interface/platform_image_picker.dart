@@ -21,5 +21,11 @@ abstract class ImagePickerPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion();
+  Future<int> getImageCount() {
+    throw UnimplementedError('getImageCount() has not been implemented.');
+  }
+
+  Future<Map<String, dynamic>> getImage(int index) {
+    throw UnimplementedError('getImage() has not been implemented.');
+  }
 }

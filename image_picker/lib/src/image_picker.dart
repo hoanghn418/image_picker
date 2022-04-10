@@ -8,7 +8,11 @@ class ImagePicker {
 
   final ImagePickerPlatform _imagePickerPlatform;
 
-  Future<String?> getPlatformVersion() async {
-    return _imagePickerPlatform.getPlatformVersion();
+  Future<int> getImageCount() async {
+    return _imagePickerPlatform.getImageCount();
+  }
+
+  Future<Map<String, dynamic>> getImage(int index) async {
+    return _imagePickerPlatform.getImage(index);
   }
 }
