@@ -3,11 +3,12 @@ package dev.hoanghn.image_picker
 import android.Manifest
 import android.app.Activity
 import android.content.ContentUris
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
+import android.util.Size
 import androidx.core.app.ActivityCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -97,8 +98,8 @@ class ImagePickerDelegate(
         -> Unit
     ) {
         val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val orderBy = MediaStore.Images.Media.DATE_TAKEN
-        val cursor = activity.contentResolver.query(uri, columns, null, null, "$orderBy DESC")
+        val sortOrder = "${MediaStore.Images.Media.DATE_TAKEN} DESC"
+        val cursor = activity.contentResolver.query(uri, columns, null, null, sortOrder)
         cursor?.apply {
             moveToPosition(index)
 
@@ -112,21 +113,28 @@ class ImagePickerDelegate(
             val latitude = getDouble(latitudeIndex)
             val longitude = getDouble(longitudeIndex)
 
-            val imageUri = ContentUris.withAppendedId(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                id.toLong()
-            )
             try {
-                val bmp = if (Build.VERSION.SDK_INT < 28) {
-                    MediaStore.Images.Media.getBitmap(activity.contentResolver, imageUri)
+                val thumbnail: Bitmap = if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)) {
+                    val imageUri = ContentUris.withAppendedId(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        id.toLong()
+                    )
+                    val thumbSize = activity.dip2px(100f)
+                    activity.contentResolver.loadThumbnail(
+                        imageUri,
+                        Size(thumbSize, thumbSize),
+                        null,
+                    )
                 } else {
-                    val source: ImageDecoder.Source =
-                        ImageDecoder.createSource(activity.contentResolver, imageUri)
-                    ImageDecoder.decodeBitmap(source)
+                    MediaStore.Images.Thumbnails.getThumbnail(
+                        activity.contentResolver,
+                        id.toLong(),
+                        MediaStore.Images.Thumbnails.MINI_KIND,
+                        null
+                    )
                 }
-
                 val stream = ByteArrayOutputStream()
-                bmp.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, stream)
                 val data = stream.toByteArray()
 
                 completion(data, id, created, "$latitude, $longitude")
@@ -147,7 +155,7 @@ class ImagePickerDelegate(
 
     private fun countForGalleryImage(): Int {
         val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val cursor = activity.contentResolver.query(uri, columns, null, null, null);
+        val cursor = activity.contentResolver.query(uri, columns, null, null, null)
         val count = cursor?.count ?: 0
         cursor?.close()
         return count
@@ -215,4 +223,12 @@ class ImagePickerDelegate(
 interface PermissionManager {
     fun isPermissionGranted(permissionName: String): Boolean
     fun askForPermission(permissionName: String, requestCode: Int)
+}
+
+/**
+ * Convert dip or dp value to px value to keep the size unchanged
+ */
+fun Context.dip2px(dipValue: Float): Int {
+    val scale: Float = resources.displayMetrics.density
+    return (dipValue * scale + 0.5f).toInt()
 }
