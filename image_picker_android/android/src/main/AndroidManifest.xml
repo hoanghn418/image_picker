@@ -2,4 +2,5 @@
     package="dev.hoanghn.image_picker">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
 </manifest>

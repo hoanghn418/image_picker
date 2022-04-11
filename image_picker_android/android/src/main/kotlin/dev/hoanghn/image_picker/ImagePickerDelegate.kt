@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.Size
 import androidx.core.app.ActivityCompat
+import androidx.exifinterface.media.ExifInterface
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
@@ -24,12 +25,16 @@ class ImagePickerDelegate(
 ) : PluginRegistry.RequestPermissionsResultListener {
     private val permissionManager: PermissionManager by lazy {
         object : PermissionManager {
-            override fun isPermissionGranted(permissionName: String): Boolean =
-                (ActivityCompat.checkSelfPermission(activity, permissionName)
-                        == PackageManager.PERMISSION_GRANTED)
+            override fun isPermissionGranted(permissionNames: Array<String>): Boolean =
+                permissionNames.all {
+                    ActivityCompat.checkSelfPermission(
+                        activity,
+                        it
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
 
-            override fun askForPermission(permissionName: String, requestCode: Int) =
-                ActivityCompat.requestPermissions(activity, arrayOf(permissionName), requestCode)
+            override fun askForPermission(permissionNames: Array<String>, requestCode: Int) =
+                ActivityCompat.requestPermissions(activity, permissionNames, requestCode)
         }
     }
 
@@ -51,9 +56,10 @@ class ImagePickerDelegate(
     }
 
     fun getGalleryImageCount(methodCall: MethodCall, result: MethodChannel.Result) {
-        if (!permissionManager.isPermissionGranted(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+        val permissions = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (!permissionManager.isPermissionGranted(permissions)) {
             permissionManager.askForPermission(
-                Manifest.permission.READ_EXTERNAL_STORAGE,
+                permissions,
                 REQUEST_CODE_GET_GALLERY_IMAGE_COUNT
             )
             setPendingMethodCallAndResult(REQUEST_CODE_GET_GALLERY_IMAGE_COUNT, methodCall, result)
@@ -64,9 +70,16 @@ class ImagePickerDelegate(
     }
 
     fun getGalleryItem(methodCall: MethodCall, result: MethodChannel.Result) {
-        if (!permissionManager.isPermissionGranted(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            permissionManager.askForPermission(
+        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            arrayOf(
                 Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.ACCESS_MEDIA_LOCATION
+            )
+        else
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (!permissionManager.isPermissionGranted(permissions)) {
+            permissionManager.askForPermission(
+                permissions,
                 REQUEST_CODE_GET_GALLERY_ITEM
             )
             setPendingMethodCallAndResult(REQUEST_CODE_GET_GALLERY_ITEM, methodCall, result)
@@ -97,49 +110,72 @@ class ImagePickerDelegate(
         index: Int, completion: (ByteArray, String, Int, String)
         -> Unit
     ) {
+        val contentResolver = activity.contentResolver
         val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val sortOrder = "${MediaStore.Images.Media.DATE_TAKEN} DESC"
-        val cursor = activity.contentResolver.query(uri, columns, null, null, sortOrder)
+        val cursor = contentResolver.query(uri, columns, null, null, sortOrder)
         cursor?.apply {
             moveToPosition(index)
 
             val idIndex = getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val createdIndex = getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+            @Suppress("DEPRECATION")
             val latitudeIndex = getColumnIndexOrThrow(MediaStore.Images.Media.LATITUDE)
+
+            @Suppress("DEPRECATION")
             val longitudeIndex = getColumnIndexOrThrow(MediaStore.Images.Media.LONGITUDE)
 
             val id = getString(idIndex)
             val created = getInt(createdIndex)
-            val latitude = getDouble(latitudeIndex)
-            val longitude = getDouble(longitudeIndex)
 
+            var outputStream: ByteArrayOutputStream? = null
             try {
-                val thumbnail: Bitmap = if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)) {
+                val thumbnail: Bitmap
+                val latLongArr = doubleArrayOf(0.0, 0.0)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val imageUri = ContentUris.withAppendedId(
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                         id.toLong()
                     )
                     val thumbSize = activity.dip2px(100f)
-                    activity.contentResolver.loadThumbnail(
+                    thumbnail = contentResolver.loadThumbnail(
                         imageUri,
                         Size(thumbSize, thumbSize),
                         null,
                     )
+
+                    // must request ACCESS_MEDIA_LOCATION permission prior to call this function, else
+                    // UnsupportedOperationException: Caller must hold ACCESS_MEDIA_LOCATION permission to access original
+                    contentResolver.openInputStream(imageUri).use { stream ->
+                        stream?.also {
+                            ExifInterface(stream).run {
+                                latLongArr[0] = latLong?.get(0) ?: 0.0
+                                latLongArr[1] = latLong?.get(1) ?: 0.0
+                            }
+                        }
+                    }
                 } else {
-                    MediaStore.Images.Thumbnails.getThumbnail(
-                        activity.contentResolver,
+                    thumbnail = MediaStore.Images.Thumbnails.getThumbnail(
+                        contentResolver,
                         id.toLong(),
                         MediaStore.Images.Thumbnails.MINI_KIND,
                         null
                     )
-                }
-                val stream = ByteArrayOutputStream()
-                thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-                val data = stream.toByteArray()
 
-                completion(data, id, created, "$latitude, $longitude")
+                    latLongArr[0] = getDouble(latitudeIndex)
+                    latLongArr[1] = getDouble(longitudeIndex)
+                }
+
+                outputStream = ByteArrayOutputStream()
+                thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+                val data = outputStream.toByteArray()
+
+                completion(data, id, created, "${latLongArr[0]}, ${latLongArr[1]}")
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                outputStream?.close()
             }
 
             close()
@@ -149,8 +185,10 @@ class ImagePickerDelegate(
     private val columns = arrayOf(
         MediaStore.Images.Media._ID,
         MediaStore.Images.Media.DATE_ADDED,
-        MediaStore.Images.Media.LATITUDE,
-        MediaStore.Images.Media.LONGITUDE
+        @Suppress("DEPRECATION")
+        MediaStore.Images.Media.LATITUDE, // return value on device below Android Q
+        @Suppress("DEPRECATION")
+        MediaStore.Images.Media.LONGITUDE, // return value on device below Android Q
     )
 
     private fun countForGalleryImage(): Int {
@@ -221,8 +259,8 @@ class ImagePickerDelegate(
 }
 
 interface PermissionManager {
-    fun isPermissionGranted(permissionName: String): Boolean
-    fun askForPermission(permissionName: String, requestCode: Int)
+    fun isPermissionGranted(permissionNames: Array<String>): Boolean
+    fun askForPermission(permissionNames: Array<String>, requestCode: Int)
 }
 
 /**
