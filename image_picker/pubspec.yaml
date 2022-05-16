@@ -23,15 +23,27 @@ dependencies:
   flutter:
     sdk: flutter
   image_picker_android:
-    path: ../image_picker_android
+#    path: ../image_picker_android
+    git:
+      url: https://github.com/hoanghn418/image_picker.git
+      path: image_picker_android
+      ref: use-package-from-git-repo
   image_picker_ios:
-    path: ../image_picker_ios
+#    path: ../image_picker_ios
+    git:
+      url: https://github.com/hoanghn418/image_picker.git
+      path: image_picker_ios
+      ref: use-package-from-git-repo
 
 
 
 
   image_picker_platform_interface:
-    path: ../image_picker_platform_interface
+#    path: ../image_picker_platform_interface
+    git:
+      url: https://github.com/hoanghn418/image_picker.git
+      path: image_picker_platform_interface
+      ref: use-package-from-git-repo
 
 dev_dependencies:
   flutter_test:
